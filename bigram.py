@@ -112,5 +112,5 @@ for steps in range(vTrainingIterations+1):
     if steps%1000 == 0:
         print(f'{steps} : {loss.item()}')
 
-# Post training output
+# Post training output - generation
 print(decode(bm.generate(idx = torch.zeros((1,1), dtype = torch.long), max_tokens = 500)[0].tolist()))
