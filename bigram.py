@@ -60,6 +60,12 @@ def udfGetBatch(split: str):
     y = torch.stack([ds[i+1:i+vBlockSize+1] for i in ix])
     return x,y
 
+
+def udfEstimateLoss():
+    out = []
+    for set in ['train', 'test']:
+        
+
 xb, yb = udfGetBatch('train')
 
 class BigramModel(nn.Module):
@@ -90,7 +96,7 @@ class BigramModel(nn.Module):
             idx = torch.cat((idx, pred), dim= 1)
         return idx
 
-bm = BigramModel(vVocabSize)
+model = BigramModel(vVocabSize)
 
 # # Test code
 # logits, loss = bm(xb, yb)
@@ -104,7 +110,7 @@ optimizer = torch.optim.AdamW(bm.parameters(),lr=1e-3)
 
 for steps in range(vTrainingIterations+1):
     x, y = udfGetBatch('train')
-    logits, loss = bm(x, y)
+    logits, loss = model(x, y)
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
