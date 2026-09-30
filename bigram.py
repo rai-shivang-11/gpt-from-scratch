@@ -6,6 +6,7 @@ import torch.nn.functional as F
 vDebug = 1
 vBatchSize = 32
 vBlockSize = 8
+vEvalIterations = 100
 vTrainingIterations = 10000
 vDevice = 'cuda'
 
@@ -60,11 +61,19 @@ def udfGetBatch(split: str):
     y = torch.stack([ds[i+1:i+vBlockSize+1] for i in ix])
     return x,y
 
-
+@torch.no_grad()
 def udfEstimateLoss():
-    out = []
+    out = {}
+    model.eval()                    # Setting the model on evaluation mode
     for set in ['train', 'test']:
-        
+        losses = torch.zeros(vEvalIterations)
+        for k in range(vEvalIterations):
+            x, y = udfGetBatch(set)
+            logits, loss = model(x,y)
+            losses[k] = loss.item()
+        out[set] = losses.mean()
+    model.train()
+    return out
 
 xb, yb = udfGetBatch('train')
 
@@ -91,7 +100,7 @@ class BigramModel(nn.Module):
         for _ in range(max_tokens):
             logits, loss = self(idx)
             logits = logits[:,-1,:]         # Only last character matters in bigram
-            prob = F.softmax(logits)
+            prob = F.softmax(logits, dim = 1)
             pred = torch.multinomial(prob, num_samples = 1)
             idx = torch.cat((idx, pred), dim= 1)
         return idx
@@ -106,7 +115,7 @@ model = BigramModel(vVocabSize)
 
 # Training the bigram model
 
-optimizer = torch.optim.AdamW(bm.parameters(),lr=1e-3)
+optimizer = torch.optim.AdamW(model.parameters(),lr=1e-3)
 
 for steps in range(vTrainingIterations+1):
     x, y = udfGetBatch('train')
@@ -116,7 +125,8 @@ for steps in range(vTrainingIterations+1):
     optimizer.step()
 
     if steps%1000 == 0:
-        print(f'{steps} : {loss.item()}')
+        est_loss = udfEstimateLoss()
+        print(f'Step {steps} || Training Loss: {est_loss['train']} || Validation Loss: {est_loss['test']}')
 
 # Post training output - generation 1
-print(decode(bm.generate(idx = torch.zeros((1,1), dtype = torch.long), max_tokens = 500)[0].tolist()))
+print(decode(model.generate(idx = torch.zeros((1,1), dtype = torch.long), max_tokens = 500)[0].tolist()))
