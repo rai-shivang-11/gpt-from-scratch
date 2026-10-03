@@ -108,10 +108,10 @@ class BigramModel(nn.Module):
 model = BigramModel(vVocabSize)
 
 # # Test code
-# logits, loss = bm(xb, yb)
-# print(logits)
-# print(loss)
-# print(decode(bm.generate(idx = torch.zeros((1,1), dtype = torch.long), max_tokens = 100)[0].tolist()))
+logits, loss = model(xb, yb)
+print(logits)
+print(loss)
+print(decode(model.generate(idx = torch.zeros((1,1), dtype = torch.long), max_tokens = 100)[0].tolist()))
 
 # Training the bigram model
 
